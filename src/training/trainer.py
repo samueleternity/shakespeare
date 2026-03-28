@@ -10,9 +10,9 @@ from src.model.architecture import build_lstm_model
 
 DATASET_DIR = "datasets"
 CHECKPOINT_DIR = "checkpoints"
-SEQ_LENGTH = 100
+SEQ_LENGTH = 200
 BATCH_SIZE = 64
-EPOCHS = 20
+EPOCHS = 40
 EMBED_DIM = 64
 LSTM_UNITS = 128
 NUM_LAYERS = 2
@@ -92,12 +92,21 @@ def train():
         # Stop early if val_loss stops improving for 3 epochs
         keras.callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=3,
+            patience=5,
             verbose=1,
             restore_best_weights=True
         ),
         # Log to CSV for later analysis
-        keras.callbacks.CSVLogger("outputs/training_log.csv")
+        keras.callbacks.CSVLogger("outputs/training_log.csv"),
+
+        # Reduce learning rate if val_loss plateaus for 2 epochs
+        keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss",
+            factor=0.5,        
+            patience=2,
+            min_lr=1e-5,
+            verbose=1
+        ),
     ]
 
     os.makedirs("outputs", exist_ok=True)
