@@ -1,0 +1,15 @@
+[project]
+name = "shakespear"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "samueleternity", email = "."},
+]
+dependencies = ["tensorflow[and-cuda]>=2.18.1"]
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "GNU General Public License v3.0"}
+
+
+[tool.pdm]
+distribution = false

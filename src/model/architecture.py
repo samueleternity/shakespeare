@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 
-def build_lstm_model(vocab_size, embed_dim=64, lstm_units=128, num_layers=2, dropout=0.2):
+def build_lstm_model(vocab_size, embed_dim=128, lstm_units=256, num_layers=2, dropout=0.3):
     inputs = keras.Input(shape=(None,), dtype="int32", name="token_ids")
 
     # 1. Embedding — maps each token integer to a dense vector

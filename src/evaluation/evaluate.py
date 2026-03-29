@@ -8,7 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 DATASET_DIR   = "datasets"
 CHECKPOINT_DIR = "checkpoints"
-SEQ_LENGTH    = 100
+SEQ_LENGTH    = 200
 BATCH_SIZE    = 64
 
 
@@ -81,7 +81,7 @@ def evaluate_split(model, encoded, split_name, stoi):
     return avg_loss, perplexity, accuracy
 
 
-def evaluate_all():
+def evaluate_all(config=None, notes=""):
     stoi, itos = load_vocab()
 
     print("Loading model from checkpoint...")
@@ -118,6 +118,12 @@ def evaluate_all():
     else:
         print("(warning — consider more dropout or less capacity)")
 
+    # Log experiment
+    if config is None:
+        config = {}
+    from src.utils.experiment_tracker import log_experiment
+    log_experiment(config, results, notes=notes)
+
     # Save results
     os.makedirs("outputs", exist_ok=True)
     results_path = os.path.join("outputs", "evaluation_results.json")
@@ -127,4 +133,16 @@ def evaluate_all():
 
 
 if __name__ == "__main__":
-    evaluate_all()
+    config = {
+        "epochs_run":    80,
+        "seq_length":    200,
+        "batch_size":    64,
+        "embed_dim":     64,
+        "lstm_units":    128,
+        "num_layers":    2,
+        "dropout":       0.2,
+        "learning_rate": 0.001,
+    }
+    notes = "Iteration 3 - 80 epochs"
+
+    evaluate_all(config=config, notes=notes)
