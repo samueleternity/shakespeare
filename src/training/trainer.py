@@ -6,18 +6,24 @@ import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from src.model.architecture import build_lstm_model
+from src.model.architecture import build_lstm_model, build_transformer_model
+
+MODEL_TYPE    = "transformer" 
 
 DATASET_DIR = "datasets"
 CHECKPOINT_DIR = "checkpoints"
 SEQ_LENGTH = 200
 BATCH_SIZE = 64
-EPOCHS = 60
-EMBED_DIM = 128
+EPOCHS = 80
+
 LSTM_UNITS = 256
+
+EMBED_DIM = 128
+NUM_HEADS = 4
+FF_DIM = 512
 NUM_LAYERS = 2
-DROPOUT = 0.3
-LEARNING_RATE = 0.001
+DROPOUT = 0.1
+LEARNING_RATE = 0.0005
 
 
 def load_vocab():
@@ -65,16 +71,27 @@ def train():
     train_ds = make_dataset(train_encoded, SEQ_LENGTH, BATCH_SIZE)
     val_ds   = make_dataset(val_encoded,   SEQ_LENGTH, BATCH_SIZE)
 
-    model = build_lstm_model(
-        vocab_size=vocab_size,
-        embed_dim=EMBED_DIM,
-        lstm_units=LSTM_UNITS,
-        num_layers=NUM_LAYERS,
-        dropout=DROPOUT
-    )
+    if MODEL_TYPE == "transformer":
+        model = build_transformer_model(
+            vocab_size=vocab_size,
+            seq_length=SEQ_LENGTH,
+            embed_dim=EMBED_DIM,
+            num_heads=NUM_HEADS,
+            ff_dim=FF_DIM,
+            num_layers=NUM_LAYERS,
+            dropout=DROPOUT
+        )
+    else:
+        model = build_lstm_model(
+            vocab_size=vocab_size,
+            embed_dim=EMBED_DIM,
+            lstm_units=LSTM_UNITS,
+            num_layers=NUM_LAYERS,
+            dropout=DROPOUT
+        )
 
     model.compile(
-        optimizer=keras.optimizers.Adam(LEARNING_RATE),
+        optimizer=keras.optimizers.Adam(LEARNING_RATE, clipnorm=1.0, weight_decay=1e-4),
         loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"]
     )

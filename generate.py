@@ -3,6 +3,11 @@ from tensorflow import keras
 import numpy as np
 import json
 import os
+from src.model.architecture import (
+    build_transformer_model,
+    TokenAndPositionEmbedding,
+    TransformerBlock
+)
 
 DATASET_DIR = "datasets"
 CHECKPOINT_DIR = "checkpoints"
@@ -17,32 +22,37 @@ def load_vocab():
     return stoi, itos
 
 
-def generate(seed_text, num_chars=500, temperature=0.5):
+def generate(seed_text, num_chars=100, temperature=0.3, max_model_len=256):
     stoi, itos = load_vocab()
-
+    
     model = keras.models.load_model(
-        os.path.join(CHECKPOINT_DIR, "best_model.keras")
+        os.path.join(CHECKPOINT_DIR, "best_model.keras"),
+        custom_objects={
+            "TokenAndPositionEmbedding": TokenAndPositionEmbedding,
+            "TransformerBlock": TransformerBlock,
+        }
     )
 
-    # Encode the seed text into integers
     input_ids = [stoi[ch] for ch in seed_text if ch in stoi]
-
     generated = seed_text
 
-    for _ in range(num_chars):
-        x = np.array([input_ids])                      # shape [1, seq_len]
-        logits = model.predict(x, verbose=0)            # shape [1, seq_len, 65]
-        next_logits = logits[0, -1, :]                  # take last position
-
-        # Temperature controls randomness:
-        # low  (0.5) = conservative, repetitive
-        # high (1.5) = creative, chaotic
+    print("Generating...")
+    for i in range(num_chars):
+        x = np.array([input_ids[-max_model_len:]]) 
+        
+        logits = model.predict(x, verbose=0)
+        next_logits = logits[0, -1, :]
+        
         next_logits = next_logits / temperature
         probs = tf.nn.softmax(next_logits).numpy()
 
-        next_id = np.random.choice(len(probs), p=probs) # sample from distribution
+        next_id = np.random.choice(len(probs), p=probs)
         input_ids.append(next_id)
-        generated += itos[next_id]
+        
+        char = itos[next_id]
+        generated += char
+        
+        print(char, end="", flush=True) 
 
     return generated
 

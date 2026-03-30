@@ -5,6 +5,12 @@ import json
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from src.model.architecture import (
+    build_lstm_model,
+    build_transformer_model,
+    TokenAndPositionEmbedding,
+    TransformerBlock
+)
 
 DATASET_DIR   = "datasets"
 CHECKPOINT_DIR = "checkpoints"
@@ -86,7 +92,11 @@ def evaluate_all(config=None, notes=""):
 
     print("Loading model from checkpoint...")
     model = keras.models.load_model(
-        os.path.join(CHECKPOINT_DIR, "best_model.keras")
+        os.path.join(CHECKPOINT_DIR, "best_model.keras"),
+        custom_objects={
+            "TokenAndPositionEmbedding": TokenAndPositionEmbedding,
+            "TransformerBlock": TransformerBlock,
+        }
     )
 
     results = {}
@@ -137,12 +147,14 @@ if __name__ == "__main__":
         "epochs_run":    80,
         "seq_length":    200,
         "batch_size":    64,
-        "embed_dim":     64,
-        "lstm_units":    128,
+        "embed_dim":     128,
+        # "lstm_units":    256,
+        "NUM_HEADS":     4,
+        "FF_DIM":        512,
         "num_layers":    2,
-        "dropout":       0.2,
-        "learning_rate": 0.001,
+        "dropout":       0.1,
+        "learning_rate": 0.0005,
     }
-    notes = "Iteration 3 - 80 epochs"
+    notes = "Iteration 8 - architecture changed to transformer, dropout reduced to 0.1, learning rate reduced to 0.0005"
 
     evaluate_all(config=config, notes=notes)
