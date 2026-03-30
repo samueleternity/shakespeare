@@ -148,13 +148,13 @@ if __name__ == "__main__":
         "seq_length":    200,
         "batch_size":    64,
         "embed_dim":     128,
-        # "lstm_units":    256,
+        "lstm_units":    256,
         "NUM_HEADS":     4,
         "FF_DIM":        512,
         "num_layers":    2,
         "dropout":       0.1,
         "learning_rate": 0.0005,
     }
-    notes = "Iteration 8 - architecture changed to transformer, dropout reduced to 0.1, learning rate reduced to 0.0005"
+    notes = "Iteration 10 - same settings as version 8"
 
     evaluate_all(config=config, notes=notes)

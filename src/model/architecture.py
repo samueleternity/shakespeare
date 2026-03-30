@@ -28,14 +28,15 @@ def build_lstm_model(vocab_size, embed_dim=128, lstm_units=256, num_layers=2, dr
     return model
 
 class TokenAndPositionEmbedding(keras.layers.Layer):
-    def __init__(self, seq_length, vocab_size, embed_dim, dropout=0.1, **kwargs):
+    def __init__(self, seq_length, vocab_size, embed_dim, dropout=0.3, **kwargs):
         super().__init__(**kwargs)
-        self.seq_length = seq_length
-        self.vocab_size = vocab_size
-        self.embed_dim  = embed_dim
-        self.token_emb  = keras.layers.Embedding(vocab_size, embed_dim, name="token_emb")
-        self.pos_emb    = keras.layers.Embedding(seq_length, embed_dim, name="pos_emb")
-        self.drop       = keras.layers.Dropout(dropout)
+        self.seq_length   = seq_length
+        self.vocab_size   = vocab_size
+        self.embed_dim    = embed_dim
+        self.dropout_rate = dropout          
+        self.token_emb    = keras.layers.Embedding(vocab_size, embed_dim, name="token_emb")
+        self.pos_emb      = keras.layers.Embedding(seq_length, embed_dim, name="pos_emb")
+        self.drop         = keras.layers.Dropout(dropout)
 
     def call(self, x, training=False):
         seq_len   = tf.shape(x)[1]
@@ -54,8 +55,12 @@ class TokenAndPositionEmbedding(keras.layers.Layer):
         return config
 
 class TransformerBlock(keras.layers.Layer):
-    def __init__(self, embed_dim, num_heads, ff_dim, dropout=0.1, **kwargs):
+    def __init__(self, embed_dim, num_heads, ff_dim, dropout=0.3, **kwargs):
         super().__init__(**kwargs)
+        self.embed_dim    = embed_dim        
+        self.num_heads    = num_heads        
+        self.ff_dim       = ff_dim           
+        self.dropout_rate = dropout  
         self.attention = keras.layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=embed_dim // num_heads,
@@ -101,7 +106,7 @@ def build_transformer_model(
     num_heads=4,
     ff_dim=512,
     num_layers=4,
-    dropout=0.1
+    dropout=0.3
 ):
     inputs = keras.Input(shape=(None,), dtype="int32", name="token_ids")
 

@@ -8,7 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.model.architecture import build_lstm_model, build_transformer_model
 
-MODEL_TYPE    = "transformer" 
+MODEL_TYPE = "lstm" 
 
 DATASET_DIR = "datasets"
 CHECKPOINT_DIR = "checkpoints"
@@ -22,8 +22,8 @@ EMBED_DIM = 128
 NUM_HEADS = 4
 FF_DIM = 512
 NUM_LAYERS = 2
-DROPOUT = 0.1
-LEARNING_RATE = 0.0005
+DROPOUT = 0.35
+LEARNING_RATE = 0.001
 
 
 def load_vocab():
