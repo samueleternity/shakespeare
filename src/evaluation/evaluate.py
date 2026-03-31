@@ -11,27 +11,20 @@ from src.model.architecture import (
     TokenAndPositionEmbedding,
     TransformerBlock
 )
+from src.data.bpe_tokenizer import BPETokenizer
 
 DATASET_DIR   = "datasets"
 CHECKPOINT_DIR = "checkpoints"
 SEQ_LENGTH    = 200
 BATCH_SIZE    = 64
 
+def load_tokenizer():
+    return BPETokenizer.load(os.path.join(DATASET_DIR, "bpe_vocab.json"))
 
-def load_vocab():
-    path = os.path.join(DATASET_DIR, "vocab.json")
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    stoi = data["stoi"]
-    itos = {int(k): v for k, v in data["itos"].items()}
-    return stoi, itos
-
-
-def load_and_encode(filename, stoi):
+def load_ids(filename):
     path = os.path.join(DATASET_DIR, filename)
-    with open(path, "r", encoding="utf-8") as f:
-        text = f.read()
-    return np.array([stoi[ch] for ch in text if ch in stoi], dtype=np.int32)
+    with open(path, "r") as f:
+        return np.array([int(line) for line in f if line.strip()], dtype=np.int32)
 
 
 def make_dataset(encoded, seq_length, batch_size):
@@ -49,7 +42,7 @@ def make_dataset(encoded, seq_length, batch_size):
     )
 
 
-def evaluate_split(model, encoded, split_name, stoi):
+def evaluate_split(model, encoded, split_name):
     ds = make_dataset(encoded, SEQ_LENGTH, BATCH_SIZE)
     loss_metric = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
@@ -88,7 +81,8 @@ def evaluate_split(model, encoded, split_name, stoi):
 
 
 def evaluate_all(config=None, notes=""):
-    stoi, itos = load_vocab()
+    tokenizer  = load_tokenizer()
+    vocab_size = tokenizer.vocab_size()
 
     print("Loading model from checkpoint...")
     model = keras.models.load_model(
@@ -102,9 +96,9 @@ def evaluate_all(config=None, notes=""):
     results = {}
     
     for split in ["train", "val", "test"]:
-        filename = f"{split}.txt"
-        encoded  = load_and_encode(filename, stoi)
-        loss, ppl, acc = evaluate_split(model, encoded, split.upper(), stoi)
+        filename = f"{split}.ids"
+        encoded  = load_ids(filename)
+        loss, ppl, acc = evaluate_split(model, encoded, split.upper())
         results[split] = {
             "loss": float(loss),
             "perplexity": float(ppl),
@@ -155,6 +149,6 @@ if __name__ == "__main__":
         "dropout":       0.1,
         "learning_rate": 0.0005,
     }
-    notes = "Iteration 10 - same settings as version 8"
+    notes = "Iteration 11 - dataset change through BPE, 200 steps/epoch for first run"
 
     evaluate_all(config=config, notes=notes)

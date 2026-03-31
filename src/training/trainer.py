@@ -1,50 +1,52 @@
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
-import json
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 from src.model.architecture import build_lstm_model, build_transformer_model
+from src.data.bpe_tokenizer import BPETokenizer
 
-MODEL_TYPE = "lstm" 
-
-DATASET_DIR = "datasets"
+MODEL_TYPE     = "lstm"
+DATASET_DIR    = "datasets"
 CHECKPOINT_DIR = "checkpoints"
-SEQ_LENGTH = 200
-BATCH_SIZE = 64
-EPOCHS = 80
+SEQ_LENGTH     = 200
+BATCH_SIZE     = 64
+EPOCHS         = 80
+LSTM_UNITS     = 256
+EMBED_DIM      = 128
+NUM_HEADS      = 4
+FF_DIM         = 512
+NUM_LAYERS     = 2
+DROPOUT        = 0.35
+LEARNING_RATE  = 0.001
 
-LSTM_UNITS = 256
+def load_tokenizer():
+    return BPETokenizer.load(os.path.join(DATASET_DIR, "bpe_vocab.json"))
 
-EMBED_DIM = 128
-NUM_HEADS = 4
-FF_DIM = 512
-NUM_LAYERS = 2
-DROPOUT = 0.35
-LEARNING_RATE = 0.001
-
-
-def load_vocab():
-    path = os.path.join(DATASET_DIR, "vocab.json")
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    stoi = data["stoi"]
-    itos = {int(k): v for k, v in data["itos"].items()}
-    return stoi, itos
-
-
-def load_and_encode(filename, stoi):
+def load_ids(filename):
     path = os.path.join(DATASET_DIR, filename)
-    with open(path, "r", encoding="utf-8") as f:
-        text = f.read()
-    return np.array([stoi[ch] for ch in text if ch in stoi], dtype=np.int32)
+    with open(path, "r") as f:
+        return np.array([int(line) for line in f if line.strip()], dtype=np.int32)
 
+def make_train_dataset(encoded, seq_length, batch_size):
+    data      = tf.data.Dataset.from_tensor_slices(encoded)
+    sequences = data.window(seq_length + 1, shift=1, drop_remainder=True)
+    sequences = sequences.flat_map(lambda w: w.batch(seq_length + 1))
 
-def make_dataset(encoded, seq_length, batch_size):
-    # Each sample: input = chars 0..N-1, target = chars 1..N (shifted by 1)
-    data = tf.data.Dataset.from_tensor_slices(encoded)
+    def split_input_target(seq):
+        return seq[:-1], seq[1:]
+
+    return (
+        sequences
+        .map(split_input_target)
+        .shuffle(buffer_size=10000)
+        .batch(batch_size, drop_remainder=True)
+        .prefetch(tf.data.AUTOTUNE)
+    )
+
+def make_val_dataset(encoded, seq_length, batch_size):
+    data      = tf.data.Dataset.from_tensor_slices(encoded)
     sequences = data.batch(seq_length + 1, drop_remainder=True)
 
     def split_input_target(seq):
@@ -53,23 +55,26 @@ def make_dataset(encoded, seq_length, batch_size):
     return (
         sequences
         .map(split_input_target)
-        .shuffle(1000)
         .batch(batch_size, drop_remainder=True)
         .prefetch(tf.data.AUTOTUNE)
     )
 
+def get_train_steps(encoded, seq_length, batch_size):
+    return (len(encoded) - seq_length) // batch_size
 
 def train():
-    stoi, itos = load_vocab()
-    vocab_size = len(stoi)
+    tokenizer  = load_tokenizer()
+    vocab_size = tokenizer.vocab_size()
     print(f"Vocab size: {vocab_size}")
 
-    train_encoded = load_and_encode("train.txt", stoi)
-    val_encoded   = load_and_encode("val.txt", stoi)
+    train_encoded = load_ids("train.ids")
+    val_encoded   = load_ids("val.ids")
     print(f"Train tokens: {len(train_encoded):,} | Val tokens: {len(val_encoded):,}")
 
-    train_ds = make_dataset(train_encoded, SEQ_LENGTH, BATCH_SIZE)
-    val_ds   = make_dataset(val_encoded,   SEQ_LENGTH, BATCH_SIZE)
+    train_ds    = make_train_dataset(train_encoded, SEQ_LENGTH, BATCH_SIZE)
+    val_ds      = make_val_dataset(val_encoded,     SEQ_LENGTH, BATCH_SIZE)
+    train_steps = get_train_steps(train_encoded,    SEQ_LENGTH, BATCH_SIZE)
+    print(f"Steps per epoch: {train_steps:,} → capped at 500")
 
     if MODEL_TYPE == "transformer":
         model = build_transformer_model(
@@ -97,48 +102,42 @@ def train():
     )
 
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+    os.makedirs("outputs", exist_ok=True)
 
     callbacks = [
-        # Save best model by validation loss
         keras.callbacks.ModelCheckpoint(
             filepath=os.path.join(CHECKPOINT_DIR, "best_model.keras"),
             monitor="val_loss",
             save_best_only=True,
             verbose=1
         ),
-        # Stop early if val_loss stops improving for 3 epochs
         keras.callbacks.EarlyStopping(
             monitor="val_loss",
             patience=5,
             verbose=1,
             restore_best_weights=True
         ),
-        # Log to CSV for later analysis
         keras.callbacks.CSVLogger("outputs/training_log.csv"),
-
-        # Reduce learning rate if val_loss plateaus for 2 epochs
         keras.callbacks.ReduceLROnPlateau(
             monitor="val_loss",
-            factor=0.5,        
+            factor=0.5,
             patience=2,
             min_lr=1e-5,
             verbose=1
         ),
     ]
 
-    os.makedirs("outputs", exist_ok=True)
-
     print("\nStarting training...\n")
     model.fit(
         train_ds,
         validation_data=val_ds,
         epochs=EPOCHS,
+        steps_per_epoch=200,
         callbacks=callbacks
     )
 
     print("\nTraining complete.")
     print(f"Best model saved to {CHECKPOINT_DIR}/best_model.keras")
-
 
 if __name__ == "__main__":
     train()
