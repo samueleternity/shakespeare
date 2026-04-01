@@ -139,16 +139,16 @@ def evaluate_all(config=None, notes=""):
 if __name__ == "__main__":
     config = {
         "epochs_run":    80,
-        "seq_length":    200,
+        "seq_length":    100,
         "batch_size":    64,
-        "embed_dim":     128,
-        "lstm_units":    256,
+        "embed_dim":     64,
+        "lstm_units":    128,
         "NUM_HEADS":     4,
         "FF_DIM":        512,
         "num_layers":    2,
-        "dropout":       0.1,
-        "learning_rate": 0.0005,
+        "dropout":       0.3,
+        "learning_rate": 0.0003,
     }
-    notes = "Iteration 11 - dataset change through BPE, 200 steps/epoch for first run"
+    notes = "Iteration 16 - swaped to transformer, SEQ_LENGTH    = 200, EMBED_DIM = 128, NUM_HEADS = 4, FF_DIM = 512, NUM_LAYERS = 2, DROPOUT = 0.3, LEARNING_RATE = 0.0003, steps_per_epoch = 500"
 
     evaluate_all(config=config, notes=notes)

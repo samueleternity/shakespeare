@@ -7,10 +7,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from src.model.architecture import build_lstm_model, build_transformer_model
 from src.data.bpe_tokenizer import BPETokenizer
 
-MODEL_TYPE     = "lstm"
+MODEL_TYPE     = "transformer"
 DATASET_DIR    = "datasets"
 CHECKPOINT_DIR = "checkpoints"
-SEQ_LENGTH     = 200
+SEQ_LENGTH     = 100
 BATCH_SIZE     = 64
 EPOCHS         = 80
 LSTM_UNITS     = 256
@@ -18,8 +18,8 @@ EMBED_DIM      = 128
 NUM_HEADS      = 4
 FF_DIM         = 512
 NUM_LAYERS     = 2
-DROPOUT        = 0.35
-LEARNING_RATE  = 0.001
+DROPOUT        = 0.3
+LEARNING_RATE  = 0.0003
 
 def load_tokenizer():
     return BPETokenizer.load(os.path.join(DATASET_DIR, "bpe_vocab.json"))
@@ -132,7 +132,7 @@ def train():
         train_ds,
         validation_data=val_ds,
         epochs=EPOCHS,
-        steps_per_epoch=200,
+        steps_per_epoch=500,
         callbacks=callbacks
     )
 

@@ -78,13 +78,16 @@ class TransformerBlock(keras.layers.Layer):
     def call(self, x, training=False):
         seq_len = tf.shape(x)[1]
 
-        # Causal mask - each token can only attend to itself and past tokens
-        mask = 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
-        mask = mask[tf.newaxis, tf.newaxis, :, :]
+        causal_mask = tf.linalg.band_part(
+            tf.ones((seq_len, seq_len), dtype=tf.bool), -1, 0
+        )  
 
-        attn_out = self.attention(x, x, attention_mask=mask, training=training)
+        attn_out = self.attention(
+            x, x,
+            attention_mask=causal_mask,
+            training=training
+        )
         x = self.norm1(x + self.drop1(attn_out, training=training))
-
         ffn_out = self.ffn(x)
         x = self.norm2(x + self.drop2(ffn_out, training=training))
         return x
