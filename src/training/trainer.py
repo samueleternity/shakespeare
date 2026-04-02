@@ -10,16 +10,16 @@ from src.data.bpe_tokenizer import BPETokenizer
 MODEL_TYPE     = "transformer"
 DATASET_DIR    = "datasets"
 CHECKPOINT_DIR = "checkpoints"
-SEQ_LENGTH     = 100
+SEQ_LENGTH     = 50
 BATCH_SIZE     = 64
 EPOCHS         = 80
 LSTM_UNITS     = 256
-EMBED_DIM      = 128
-NUM_HEADS      = 4
-FF_DIM         = 512
-NUM_LAYERS     = 2
-DROPOUT        = 0.3
-LEARNING_RATE  = 0.0003
+EMBED_DIM      = 256
+NUM_HEADS      = 8
+FF_DIM         = 1024
+NUM_LAYERS     = 4
+DROPOUT        = 0.1
+LEARNING_RATE  = 0.0001
 
 def load_tokenizer():
     return BPETokenizer.load(os.path.join(DATASET_DIR, "bpe_vocab.json"))
@@ -42,6 +42,7 @@ def make_train_dataset(encoded, seq_length, batch_size):
         .map(split_input_target)
         .shuffle(buffer_size=10000)
         .batch(batch_size, drop_remainder=True)
+        .repeat()
         .prefetch(tf.data.AUTOTUNE)
     )
 
@@ -113,7 +114,7 @@ def train():
         ),
         keras.callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=5,
+            patience=10,
             verbose=1,
             restore_best_weights=True
         ),
@@ -121,7 +122,7 @@ def train():
         keras.callbacks.ReduceLROnPlateau(
             monitor="val_loss",
             factor=0.5,
-            patience=2,
+            patience=5,
             min_lr=1e-5,
             verbose=1
         ),
@@ -133,7 +134,7 @@ def train():
         validation_data=val_ds,
         epochs=EPOCHS,
         steps_per_epoch=500,
-        callbacks=callbacks
+        callbacks=callbacks,
     )
 
     print("\nTraining complete.")

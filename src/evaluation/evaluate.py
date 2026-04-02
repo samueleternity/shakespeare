@@ -149,6 +149,6 @@ if __name__ == "__main__":
         "dropout":       0.3,
         "learning_rate": 0.0003,
     }
-    notes = "Iteration 16 - swaped to transformer, SEQ_LENGTH    = 200, EMBED_DIM = 128, NUM_HEADS = 4, FF_DIM = 512, NUM_LAYERS = 2, DROPOUT = 0.3, LEARNING_RATE = 0.0003, steps_per_epoch = 500"
+    notes = "Iteration 16 - swaped to transformer, SEQ_LENGTH    = 200, EMBED_DIM = 256, NUM_HEADS = 8, FF_DIM = 1024, NUM_LAYERS = 4, DROPOUT = 0.1, LEARNING_RATE = 0.0001, steps_per_epoch = 500"
 
     evaluate_all(config=config, notes=notes)
